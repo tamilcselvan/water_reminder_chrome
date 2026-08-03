@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import { useHydroState } from './useHydroState';
+import { TodayView } from './views/TodayView';
 
 type Tab = 'today' | 'stats' | 'achievements';
 const TABS: Tab[] = ['today', 'stats', 'achievements'];
@@ -32,10 +33,12 @@ export function Popup() {
             transition={{ duration: 0.2 }}
           >
             {tab === 'today' && (
-              <div className="card">
-                <em>Today view lands in Task 11</em>
-                <p>{hydro.loading ? 'Loading…' : `${hydro.todayCache.totalMl}ml logged today`}</p>
-              </div>
+              <TodayView
+                settings={hydro.settings}
+                todayCache={hydro.todayCache}
+                streak={hydro.streak}
+                onLogged={hydro.refresh}
+              />
             )}
             {tab === 'stats' && <div className="card"><em>Stats view lands in Task 12</em></div>}
             {tab === 'achievements' && <div className="card"><em>Achievements view lands in Task 13</em></div>}
