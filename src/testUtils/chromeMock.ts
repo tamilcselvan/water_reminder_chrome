@@ -4,14 +4,14 @@ export interface ChromeMockHandles {
   local: StorageArea;
   alarmsCreated: Record<string, chrome.alarms.AlarmCreateInfo>;
   badge: { text: string; color: string };
-  notifications: Record<string, chrome.notifications.NotificationOptions<true>>;
+  notifications: Record<string, chrome.notifications.NotificationOptions>;
 }
 
 export function installChromeMock(): ChromeMockHandles {
   const local: StorageArea = {};
   const alarmsCreated: Record<string, chrome.alarms.AlarmCreateInfo> = {};
   const badge = { text: '', color: '' };
-  const notifications: Record<string, chrome.notifications.NotificationOptions<true>> = {};
+  const notifications: Record<string, chrome.notifications.NotificationOptions> = {};
 
   const chromeMock = {
     storage: {
@@ -45,7 +45,7 @@ export function installChromeMock(): ChromeMockHandles {
       onAlarm: { addListener: () => {} },
     },
     notifications: {
-      create: async (id: string, options: chrome.notifications.NotificationOptions<true>) => {
+      create: async (id: string, options: chrome.notifications.NotificationOptions) => {
         notifications[id] = options;
         return id;
       },
