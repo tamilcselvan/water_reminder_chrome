@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { goalPercent } from '../../lib/goal';
 
 interface ProgressRingProps {
   totalMl: number;
@@ -11,9 +12,12 @@ const STROKE = 10;
 export function ProgressRing({ totalMl, goalMl, size = 140 }: ProgressRingProps) {
   const radius = (size - STROKE) / 2;
   const circumference = 2 * Math.PI * radius;
+  // Fraction (0-1, clamped) used only for drawing the stroke offset.
   const pct = goalMl > 0 ? Math.min(1, totalMl / goalMl) : 0;
   const offset = circumference * (1 - pct);
-  const pctLabel = Math.round(pct * 100);
+  // Shared with background/index.ts's updateBadge so the two consumers of "percent of
+  // goal" can't drift out of sync (see src/lib/goal.ts).
+  const pctLabel = goalPercent(totalMl, goalMl);
 
   return (
     <svg width={size} height={size} role="img" aria-label={`${pctLabel}% of daily goal`}>

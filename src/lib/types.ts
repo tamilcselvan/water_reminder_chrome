@@ -53,3 +53,7 @@ export const DEFAULT_STREAK: StreakState = {
 export const MIN_INTERVAL_MINUTES = 5;
 export const MIN_AMOUNT_ML = 1;
 export const MAX_AMOUNT_ML = 5000;
+// A goal of 0 (or negative) makes isGoalMet() trivially true for any total, instantly
+// "completing" the day, incrementing the streak, and pausing reminders for 24h — and
+// divides-by-zero into a NaN% badge. 100ml is a realistic floor for a daily hydration goal.
+export const MIN_DAILY_GOAL_ML = 100;

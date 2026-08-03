@@ -1,6 +1,8 @@
 import { getSettings, getTodayCache } from '../lib/storage';
 import { logDrink } from '../lib/logAction';
 import { computeNextReminderTime, computeWindowStartAfter, isWithinActiveHours } from '../lib/alarmScheduler';
+import { goalPercent } from '../lib/goal';
+import { MIN_INTERVAL_MINUTES } from '../lib/types';
 
 const REMINDER_ALARM = 'hydro-reminder';
 const HEARTBEAT_ALARM = 'hydro-heartbeat';
@@ -13,14 +15,18 @@ export async function scheduleNextReminder(now: number = Date.now()): Promise<vo
     await chrome.alarms.clear(REMINDER_ALARM);
     return;
   }
-  const next = computeNextReminderTime(now, settings.intervalMinutes, settings.activeHours);
+  // Clamp defensively at the scheduling seam itself: the options UI already rejects
+  // values below MIN_INTERVAL_MINUTES, but a corrupted or externally-written setting
+  // (e.g. synced from another source) could still bypass that UI-level validation.
+  const intervalMinutes = Math.max(MIN_INTERVAL_MINUTES, settings.intervalMinutes);
+  const next = computeNextReminderTime(now, intervalMinutes, settings.activeHours);
   await chrome.alarms.create(REMINDER_ALARM, { when: next });
 }
 
 export async function updateBadge(now: number = Date.now()): Promise<void> {
   const settings = await getSettings();
   const cache = await getTodayCache(now);
-  const pct = Math.min(100, Math.round((cache.totalMl / settings.dailyGoalMl) * 100));
+  const pct = goalPercent(cache.totalMl, settings.dailyGoalMl);
   const text = cache.goalMetAt ? '✓' : `${pct}%`;
   await chrome.action.setBadgeText({ text });
   await chrome.action.setBadgeBackgroundColor({ color: cache.goalMetAt ? '#2e7d32' : '#0288d1' });
@@ -71,6 +77,14 @@ chrome.runtime.onInstalled.addListener(() => {
   updateBadge();
 });
 
+// Chrome persists periodic alarms (like HEARTBEAT_ALARM) across browser restarts, so
+// onStartup only needs to re-arm the one-shot reminder alarm (lost on restart) and
+// refresh the badge to reflect current state — not recreate the heartbeat.
+chrome.runtime.onStartup.addListener(() => {
+  scheduleNextReminder();
+  updateBadge();
+});
+
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   const now = Date.now();
   if (alarm.name === REMINDER_ALARM || alarm.name === SNOOZE_ALARM) {
@@ -91,7 +105,15 @@ chrome.notifications.onButtonClicked.addListener(async (notifId, buttonIndex) =>
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && changes.settings) {
+  if (area !== 'local') return;
+  if (changes.settings) {
     scheduleNextReminder();
+  }
+  // The badge must refresh both when a drink is logged (changes.todayCache, written by
+  // every logDrink call — e.g. from the popup's quick-add) and when settings change
+  // (changes.settings affects the percentage denominator via dailyGoalMl). Without this,
+  // a popup quick-add left the badge stale until the next 5-minute heartbeat alarm.
+  if (changes.todayCache || changes.settings) {
+    updateBadge();
   }
 });

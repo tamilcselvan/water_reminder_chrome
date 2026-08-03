@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getSettings, setSettings, setTodayCache, setStreak } from '../lib/storage';
-import { Settings, DEFAULT_STREAK, MIN_INTERVAL_MINUTES, Units } from '../lib/types';
+import { Settings, DEFAULT_STREAK, MIN_INTERVAL_MINUTES, MIN_DAILY_GOAL_ML, Units } from '../lib/types';
 import { todayDateKey } from '../lib/dateUtils';
 
 function minutesToTimeString(minutes: number): string {
@@ -17,6 +17,7 @@ function timeStringToMinutes(time: string): number {
 export function Options() {
   const [settings, setSettingsState] = useState<Settings | null>(null);
   const [intervalError, setIntervalError] = useState<string | null>(null);
+  const [goalError, setGoalError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -31,6 +32,16 @@ export function Options() {
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
   }
+
+  const handleGoalChange = (value: string) => {
+    const ml = Number(value);
+    if (!Number.isFinite(ml) || ml < MIN_DAILY_GOAL_ML) {
+      setGoalError(`Minimum daily goal is ${MIN_DAILY_GOAL_ML}ml`);
+      return;
+    }
+    setGoalError(null);
+    save({ ...settings, dailyGoalMl: ml });
+  };
 
   const handleIntervalChange = (value: string) => {
     const minutes = Number(value);
@@ -77,9 +88,10 @@ export function Options() {
         <input
           type="number"
           value={settings.dailyGoalMl}
-          onChange={(e) => save({ ...settings, dailyGoalMl: Number(e.target.value) })}
+          onChange={(e) => handleGoalChange(e.target.value)}
         />
       </label>
+      {goalError && <p role="alert">{goalError}</p>}
 
       <label>
         Reminder interval (minutes)

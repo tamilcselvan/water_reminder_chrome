@@ -2,14 +2,13 @@ import { useEffect, useState } from 'react';
 import { getLogsSince } from '../../lib/db';
 import { dateKeyFromTimestamp, previousDateKey } from '../../lib/dateUtils';
 import { computeTotalMl } from '../../lib/goal';
+import { DAY_MS } from '../../lib/alarmScheduler';
 import { LogEntry } from '../../lib/types';
 
 interface DayTotal {
   dateKey: string;
   totalMl: number;
 }
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 function lastNDayKeys(n: number, now: number): string[] {
   // Walk back one calendar day at a time (via previousDateKey's Date field

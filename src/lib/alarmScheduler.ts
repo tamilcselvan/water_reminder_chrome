@@ -1,7 +1,7 @@
 import { ActiveHours } from './types';
 import { minutesSinceLocalMidnight } from './dateUtils';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+export const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function isWithinActiveHours(nowMs: number, activeHours: ActiveHours | null): boolean {
   if (!activeHours) return true;

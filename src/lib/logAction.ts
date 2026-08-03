@@ -1,7 +1,7 @@
 import { addLog, getAllLogs, getAchievements, addAchievement } from './db';
 import { getSettings, getTodayCache, setTodayCache, getStreak, setStreak } from './storage';
 import { computeTotalMl, isGoalMet } from './goal';
-import { applyGoalMetToday, applyDayRollover } from './streak';
+import { applyGoalMetToday } from './streak';
 import { findNewUnlocks, AchievementDef } from './achievements';
 import { todayDateKey } from './dateUtils';
 import { TodayCache, StreakState } from './types';
@@ -17,7 +17,9 @@ export async function logDrink(amountMl: number, now: number = Date.now()): Prom
 
   const todayKey = todayDateKey(now);
   const settings = await getSettings();
-  let streak = applyDayRollover(await getStreak(), todayKey);
+  // getStreak(now) already self-corrects for a missed day (mirrors getTodayCache),
+  // so no separate rollover call is needed here.
+  let streak = await getStreak(now);
 
   const allLogs = await getAllLogs();
   const todayTotal = computeTotalMl(allLogs.filter((l) => todayDateKey(l.timestampMs) === todayKey));

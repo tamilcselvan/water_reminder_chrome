@@ -44,9 +44,27 @@ describe('streak', () => {
     expect(await getStreak()).toEqual(DEFAULT_STREAK);
   });
 
-  it('persists and returns what was set', async () => {
+  it('persists and returns what was set when the stored day is still current', async () => {
+    const now = new Date(2026, 2, 5, 10, 0).getTime();
     const custom = { currentStreak: 3, longestStreak: 5, lastGoalMetDateKey: '2026-03-04' };
     await setStreak(custom);
-    expect(await getStreak()).toEqual(custom);
+    expect(await getStreak(now)).toEqual(custom);
+  });
+
+  it('leaves the streak untouched when the goal was met yesterday', async () => {
+    const now = new Date(2026, 2, 5, 10, 0).getTime();
+    const custom = { currentStreak: 3, longestStreak: 5, lastGoalMetDateKey: '2026-03-04' };
+    await setStreak(custom);
+    expect(await getStreak(now)).toEqual(custom);
+  });
+
+  it('self-corrects currentStreak to 0 when a day was missed since the last read', async () => {
+    const now = new Date(2026, 2, 10, 10, 0).getTime();
+    await setStreak({ currentStreak: 4, longestStreak: 4, lastGoalMetDateKey: '2026-03-02' });
+    expect(await getStreak(now)).toEqual({
+      currentStreak: 0,
+      longestStreak: 4,
+      lastGoalMetDateKey: '2026-03-02',
+    });
   });
 });

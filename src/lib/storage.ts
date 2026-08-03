@@ -1,5 +1,6 @@
 import { Settings, TodayCache, StreakState, DEFAULT_SETTINGS, DEFAULT_STREAK } from './types';
 import { todayDateKey } from './dateUtils';
+import { applyDayRollover } from './streak';
 
 const KEYS = { settings: 'settings', todayCache: 'todayCache', streak: 'streak' } as const;
 
@@ -26,9 +27,13 @@ export async function setTodayCache(cache: TodayCache): Promise<void> {
   await chrome.storage.local.set({ [KEYS.todayCache]: cache });
 }
 
-export async function getStreak(): Promise<StreakState> {
+export async function getStreak(now: number = Date.now()): Promise<StreakState> {
   const result = await chrome.storage.local.get(KEYS.streak);
-  return { ...DEFAULT_STREAK, ...(result[KEYS.streak] as Partial<StreakState> | undefined) };
+  const stored: StreakState = {
+    ...DEFAULT_STREAK,
+    ...(result[KEYS.streak] as Partial<StreakState> | undefined),
+  };
+  return applyDayRollover(stored, todayDateKey(now));
 }
 
 export async function setStreak(streak: StreakState): Promise<void> {

@@ -3,6 +3,15 @@ import { installChromeMock } from '../testUtils/chromeMock';
 import { __resetDBConnectionForTests } from '../lib/db';
 import { setSettings, setTodayCache } from '../lib/storage';
 import { DEFAULT_SETTINGS } from '../lib/types';
+import { todayDateKey } from '../lib/dateUtils';
+
+// Chrome's real storage.onChanged / alarms.onAlarm / runtime.onInstalled / onStartup
+// callbacks are not awaited by the caller, so after firing a mocked event we flush both
+// the microtask queue and one macrotask tick before asserting on the resulting side
+// effects (updateBadge/scheduleNextReminder chain several `await`s internally).
+async function flushAsync() {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}
 
 async function loadFreshModule() {
   vi.resetModules();
@@ -95,5 +104,85 @@ describe('fireReminderIfDue', () => {
     const { fireReminderIfDue } = await loadFreshModule();
     await fireReminderIfDue(now);
     expect(handles.alarmsCreated['hydro-reminder'].when).toBe(new Date(2026, 2, 6, 8, 0).getTime());
+  });
+});
+
+describe('storage.onChanged listener wiring (regression for stale badge on quick-add)', () => {
+  it('refreshes the badge when chrome fires storage.onChanged with a todayCache change', async () => {
+    const handles = installChromeMock();
+    const key = todayDateKey();
+    await setSettings({ ...DEFAULT_SETTINGS, dailyGoalMl: 2000 });
+    await setTodayCache({ dateKey: key, totalMl: 0, goalMetAt: null });
+
+    // Loading the module registers its top-level chrome.storage.onChanged listener
+    // against the mock installed above.
+    await loadFreshModule();
+
+    // Simulate what logDrink actually does on every call: write a new todayCache, then
+    // let chrome fire the change event (previously only changes.settings was handled).
+    await setTodayCache({ dateKey: key, totalMl: 1000, goalMetAt: null });
+    handles.fire.storageOnChanged({
+      todayCache: {
+        oldValue: { dateKey: key, totalMl: 0, goalMetAt: null },
+        newValue: { dateKey: key, totalMl: 1000, goalMetAt: null },
+      },
+    });
+    await flushAsync();
+
+    expect(handles.badge.text).toBe('50%');
+  });
+
+  it('also refreshes the badge when settings change (the denominator changed too)', async () => {
+    const handles = installChromeMock();
+    const key = todayDateKey();
+    await setSettings({ ...DEFAULT_SETTINGS, dailyGoalMl: 2000 });
+    await setTodayCache({ dateKey: key, totalMl: 1000, goalMetAt: null });
+
+    await loadFreshModule();
+
+    await setSettings({ ...DEFAULT_SETTINGS, dailyGoalMl: 4000 });
+    handles.fire.storageOnChanged({
+      settings: {
+        oldValue: { ...DEFAULT_SETTINGS, dailyGoalMl: 2000 },
+        newValue: { ...DEFAULT_SETTINGS, dailyGoalMl: 4000 },
+      },
+    });
+    await flushAsync();
+
+    expect(handles.badge.text).toBe('25%');
+  });
+
+  it('ignores changes from a non-local storage area', async () => {
+    const handles = installChromeMock();
+    const key = todayDateKey();
+    await setSettings({ ...DEFAULT_SETTINGS, dailyGoalMl: 2000 });
+    await setTodayCache({ dateKey: key, totalMl: 0, goalMetAt: null });
+
+    await loadFreshModule();
+
+    await setTodayCache({ dateKey: key, totalMl: 1000, goalMetAt: null });
+    handles.fire.storageOnChanged(
+      { todayCache: { newValue: { dateKey: key, totalMl: 1000, goalMetAt: null } } },
+      'sync',
+    );
+    await flushAsync();
+
+    expect(handles.badge.text).toBe('');
+  });
+});
+
+describe('runtime.onStartup', () => {
+  it('re-arms the reminder alarm and refreshes the badge, without recreating the heartbeat alarm', async () => {
+    const handles = installChromeMock();
+    await setSettings({ ...DEFAULT_SETTINGS, dailyGoalMl: 2000, intervalMinutes: 30, activeHours: null });
+    await setTodayCache({ dateKey: todayDateKey(), totalMl: 500, goalMetAt: null });
+
+    await loadFreshModule();
+    handles.fire.runtimeOnStartup();
+    await flushAsync();
+
+    expect(handles.alarmsCreated['hydro-reminder']).toBeDefined();
+    expect(handles.badge.text).toBe('25%');
+    expect(handles.alarmsCreated['hydro-heartbeat']).toBeUndefined();
   });
 });
