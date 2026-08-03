@@ -47,4 +47,9 @@ describe('applyDayRollover', () => {
     const result = applyDayRollover(streak, '2026-03-05');
     expect(result).toEqual({ currentStreak: 0, longestStreak: 4, lastGoalMetDateKey: '2026-03-02' });
   });
+
+  it('leaves the streak untouched when today already met the goal', () => {
+    const streak = { currentStreak: 3, longestStreak: 3, lastGoalMetDateKey: '2026-03-05' };
+    expect(applyDayRollover(streak, '2026-03-05')).toEqual(streak);
+  });
 });

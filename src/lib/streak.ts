@@ -14,6 +14,7 @@ export function applyGoalMetToday(streak: StreakState, todayKey: string): Streak
 
 export function applyDayRollover(streak: StreakState, newTodayKey: string): StreakState {
   if (streak.lastGoalMetDateKey === null) return streak;
+  if (streak.lastGoalMetDateKey === newTodayKey) return streak;
   const yesterdayKey = previousDateKey(newTodayKey);
   if (streak.lastGoalMetDateKey === yesterdayKey) return streak;
   return { ...streak, currentStreak: 0 };
