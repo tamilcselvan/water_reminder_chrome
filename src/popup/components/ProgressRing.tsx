@@ -36,7 +36,7 @@ export function ProgressRing({ totalMl, goalMl, size = 140 }: ProgressRingProps)
         strokeDasharray={circumference}
         initial={{ strokeDashoffset: circumference }}
         animate={{ strokeDashoffset: offset }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
         transform={`rotate(-90 ${size / 2} ${size / 2})`}
       />
       <text
