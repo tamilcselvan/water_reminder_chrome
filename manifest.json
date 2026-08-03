@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Hydro — Water Reminder",
+  "version": "0.1.0",
+  "description": "Reminds you to drink water on a schedule and tracks your streaks.",
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "public/icons/icon-16.png",
+      "32": "public/icons/icon-32.png",
+      "48": "public/icons/icon-48.png",
+      "128": "public/icons/icon-128.png"
+    }
+  },
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+  "options_page": "src/options/options.html",
+  "permissions": ["alarms", "notifications", "storage"],
+  "icons": {
+    "16": "public/icons/icon-16.png",
+    "32": "public/icons/icon-32.png",
+    "48": "public/icons/icon-48.png",
+    "128": "public/icons/icon-128.png"
+  }
+}
