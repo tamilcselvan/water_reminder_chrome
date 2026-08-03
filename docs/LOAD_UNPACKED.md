@@ -17,10 +17,9 @@
    small (e.g. 300ml) and set the reminder interval to 5 minutes (the minimum).
 4. Log enough water via the popup to reach the lowered goal. Confirm the badge changes to
    `✓` and the streak count increments to 1.
-5. Wait for (or manually trigger via `chrome://extensions` → service worker "Inspect views"
-   → console → call the exported `fireReminderIfDue()`) a reminder notification. Confirm it
-   has "Log 250ml" and "Snooze 15m" buttons, and clicking "Log 250ml" updates the popup's
-   total without opening the popup.
+5. Wait for a reminder notification. (Step 3 sets the reminder interval to 5 minutes, so the
+   wait should be short.) Confirm it has "Log 250ml" and "Snooze 15m" buttons, and clicking
+   "Log 250ml" updates the popup's total without opening the popup.
 6. Check the **Stats** tab — confirm a 7-day bar chart appears with today's bar showing the
    logged total.
 7. Check the **Achievements** tab — confirm "First Drop" shows unlocked (full opacity) and
