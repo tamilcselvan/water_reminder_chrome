@@ -1,1 +1,6 @@
-console.log('popup placeholder — replaced in Task 10');
+import { createRoot } from 'react-dom/client';
+import { Popup } from './Popup';
+import './theme.css';
+
+const root = document.getElementById('root')!;
+createRoot(root).render(<Popup />);
