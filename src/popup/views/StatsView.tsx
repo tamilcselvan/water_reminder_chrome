@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getLogsSince } from '../../lib/db';
-import { dateKeyFromTimestamp } from '../../lib/dateUtils';
+import { dateKeyFromTimestamp, previousDateKey } from '../../lib/dateUtils';
 import { computeTotalMl } from '../../lib/goal';
 import { LogEntry } from '../../lib/types';
 
@@ -12,9 +12,12 @@ interface DayTotal {
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function lastNDayKeys(n: number, now: number): string[] {
-  const keys: string[] = [];
-  for (let i = n - 1; i >= 0; i--) {
-    keys.push(dateKeyFromTimestamp(now - i * DAY_MS));
+  // Walk back one calendar day at a time (via previousDateKey's Date field
+  // arithmetic) rather than subtracting fixed 24h millisecond offsets, so
+  // this stays correct across DST transitions (23h/25h calendar days).
+  const keys: string[] = [dateKeyFromTimestamp(now)];
+  for (let i = 1; i < n; i++) {
+    keys.unshift(previousDateKey(keys[0]));
   }
   return keys;
 }
