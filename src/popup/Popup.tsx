@@ -3,6 +3,7 @@ import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import { useHydroState } from './useHydroState';
 import { TodayView } from './views/TodayView';
 import { StatsView } from './views/StatsView';
+import { AchievementsView } from './views/AchievementsView';
 
 type Tab = 'today' | 'stats' | 'achievements';
 const TABS: Tab[] = ['today', 'stats', 'achievements'];
@@ -42,7 +43,7 @@ export function Popup() {
               />
             )}
             {tab === 'stats' && <StatsView />}
-            {tab === 'achievements' && <div className="card"><em>Achievements view lands in Task 13</em></div>}
+            {tab === 'achievements' && <AchievementsView />}
           </motion.div>
         </AnimatePresence>
       </div>
