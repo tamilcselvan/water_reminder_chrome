@@ -83,4 +83,17 @@ describe('fireReminderIfDue', () => {
     await fireReminderIfDue(now);
     expect(Object.keys(handles.notifications)).not.toContain('hydro-reminder-notif');
   });
+
+  it('reschedules to the very next day\'s window start (not two days out) when the goal is already met inside active hours', async () => {
+    const handles = installChromeMock();
+    await setSettings({
+      ...DEFAULT_SETTINGS,
+      activeHours: { startMinutes: 8 * 60, endMinutes: 21 * 60 },
+    });
+    const now = new Date(2026, 2, 5, 14, 0).getTime();
+    await setTodayCache({ dateKey: '2026-03-05', totalMl: 2000, goalMetAt: now });
+    const { fireReminderIfDue } = await loadFreshModule();
+    await fireReminderIfDue(now);
+    expect(handles.alarmsCreated['hydro-reminder'].when).toBe(new Date(2026, 2, 6, 8, 0).getTime());
+  });
 });
