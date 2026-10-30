@@ -171,6 +171,28 @@ describe('storage.onChanged listener wiring (regression for stale badge on quick
   });
 });
 
+describe('extension updates', () => {
+  it('checks on startup and every 30 minutes, reloading only for available updates', async () => {
+    const handles = installChromeMock();
+    const check = vi.spyOn(chrome.runtime, 'requestUpdateCheck');
+    const reload = vi.spyOn(chrome.runtime, 'reload');
+    await loadFreshModule();
+    expect(handles.alarmsCreated.updateCheck).toEqual({ periodInMinutes: 30 });
+    handles.fire.runtimeOnStartup();
+    expect(check).toHaveBeenCalledTimes(1);
+    const callback = check.mock.calls[0][0]!;
+    callback('no_update', undefined);
+    expect(reload).not.toHaveBeenCalled();
+    callback('update_available', { version: '1.0' });
+    expect(reload).toHaveBeenCalledTimes(1);
+    handles.fire.alarmsOnAlarm({ name: 'updateCheck', scheduledTime: Date.now(), persistAcrossSessions: true });
+    expect(check).toHaveBeenCalledTimes(2);
+    handles.fire.runtimeOnUpdateAvailable('1.0');
+    expect(reload).toHaveBeenCalledTimes(2);
+    await flushAsync();
+  });
+});
+
 describe('runtime.onStartup', () => {
   it('re-arms the reminder alarm and refreshes the badge, without recreating the heartbeat alarm', async () => {
     const handles = installChromeMock();

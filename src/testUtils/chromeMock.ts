@@ -27,6 +27,7 @@ export interface ChromeMockHandles {
     notificationsOnButtonClicked: (notificationId: string, buttonIndex: number) => void;
     runtimeOnInstalled: () => void;
     runtimeOnStartup: () => void;
+    runtimeOnUpdateAvailable: (version: string) => void;
   };
 }
 
@@ -41,6 +42,7 @@ export function installChromeMock(): ChromeMockHandles {
   const notificationsOnButtonClickedListeners: NotificationButtonClickedListener[] = [];
   const runtimeOnInstalledListeners: VoidListener[] = [];
   const runtimeOnStartupListeners: VoidListener[] = [];
+  const runtimeOnUpdateAvailableListeners: ((details: { version: string }) => void)[] = [];
 
   const chromeMock = {
     storage: {
@@ -113,6 +115,13 @@ export function installChromeMock(): ChromeMockHandles {
       },
     },
     runtime: {
+      requestUpdateCheck: (_callback: (status: string) => void) => {},
+      reload: () => {},
+      onUpdateAvailable: {
+        addListener: (listener: (details: { version: string }) => void) => {
+          runtimeOnUpdateAvailableListeners.push(listener);
+        },
+      },
       onInstalled: {
         addListener: (listener: VoidListener) => {
           runtimeOnInstalledListeners.push(listener);
@@ -150,6 +159,9 @@ export function installChromeMock(): ChromeMockHandles {
       },
       runtimeOnStartup: () => {
         for (const listener of [...runtimeOnStartupListeners]) listener();
+      },
+      runtimeOnUpdateAvailable: (version) => {
+        for (const listener of [...runtimeOnUpdateAvailableListeners]) listener({ version });
       },
     },
   };

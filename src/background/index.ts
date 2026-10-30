@@ -71,6 +71,16 @@ export async function fireReminderIfDue(now: number = Date.now()): Promise<void>
   await scheduleNextReminder(now);
 }
 
+function checkAndApplyUpdate(): void {
+  if (!chrome.runtime.requestUpdateCheck) return;
+  chrome.runtime.requestUpdateCheck((status) => {
+    if (status === 'update_available') chrome.runtime.reload();
+  });
+}
+
+chrome.alarms.create('updateCheck', { periodInMinutes: 30 });
+chrome.runtime.onUpdateAvailable.addListener(() => chrome.runtime.reload());
+
 chrome.runtime.onInstalled.addListener(() => {
   scheduleNextReminder();
   chrome.alarms.create(HEARTBEAT_ALARM, { periodInMinutes: 5 });
@@ -81,11 +91,16 @@ chrome.runtime.onInstalled.addListener(() => {
 // onStartup only needs to re-arm the one-shot reminder alarm (lost on restart) and
 // refresh the badge to reflect current state — not recreate the heartbeat.
 chrome.runtime.onStartup.addListener(() => {
+  checkAndApplyUpdate();
   scheduleNextReminder();
   updateBadge();
 });
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === 'updateCheck') {
+    checkAndApplyUpdate();
+    return;
+  }
   const now = Date.now();
   if (alarm.name === REMINDER_ALARM || alarm.name === SNOOZE_ALARM) {
     await fireReminderIfDue(now);
